@@ -135,6 +135,15 @@
             android:textSize="18sp"
             android:textStyle="bold"/>
 
+    <android.support.v7.app.MediaRouteButton
+        android:id="@+id/mediaRouteButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_below="@id/videoView1"
+        android:layout_alignParentRight="true"
+        android:layout_margin="16dp"
+        />
+
     <TextView
             android:id="@+id/textView3"
             android:layout_width="fill_parent"

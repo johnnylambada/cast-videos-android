@@ -47,6 +47,7 @@ import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.app.MediaRouteButton;
 import android.support.v7.widget.Toolbar;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
@@ -102,6 +103,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
     private CastSession mCastSession;
     private SessionManagerListener<CastSession> mSessionManagerListener;
     private MenuItem mediaRouteMenuItem;
+    private MediaRouteButton mMediaRouteButton;
 
     /**
      * indicates whether we are doing a local or a remote playback
@@ -753,6 +755,8 @@ public class LocalPlayerActivity extends AppCompatActivity {
                 togglePlayback();
             }
         });
+        mMediaRouteButton = (MediaRouteButton) findViewById(R.id.mediaRouteButton);
+        CastButtonFactory.setUpMediaRouteButton(getApplicationContext(),mMediaRouteButton);
     }
 
     private MediaInfo buildMediaInfo() {
