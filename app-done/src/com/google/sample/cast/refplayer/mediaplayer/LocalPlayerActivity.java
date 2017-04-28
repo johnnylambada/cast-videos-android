@@ -16,6 +16,7 @@
 
 package com.google.sample.cast.refplayer.mediaplayer;
 
+import com.bumptech.glide.Glide;
 import com.google.android.gms.cast.MediaInfo;
 import com.google.android.gms.cast.MediaMetadata;
 import com.google.android.gms.cast.framework.CastButtonFactory;
@@ -29,8 +30,6 @@ import com.google.sample.cast.refplayer.expandedcontrols.ExpandedControlsActivit
 import com.google.sample.cast.refplayer.settings.CastPreference;
 import com.google.sample.cast.refplayer.utils.MediaItem;
 import com.google.sample.cast.refplayer.utils.Utils;
-
-import com.androidquery.AQuery;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
@@ -92,7 +91,6 @@ public class LocalPlayerActivity extends AppCompatActivity {
     private PlaybackState mPlaybackState;
     private final Handler mHandler = new Handler();
     private final float mAspectRatio = 72f / 128;
-    private AQuery mAquery;
     private MediaItem mSelectedMedia;
     private boolean mControllersVisible;
     private int mDuration;
@@ -124,7 +122,6 @@ public class LocalPlayerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.player_activity);
-        mAquery = new AQuery(this);
         loadViews();
         setupControlsCallbacks();
         setupCastListener();
@@ -367,7 +364,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
 
     private void setCoverArtStatus(String url) {
         if (url != null) {
-            mAquery.id(mCoverArt).image(url);
+            Glide.with(this).load(url).into(mCoverArt);
             mCoverArt.setVisibility(View.VISIBLE);
             mVideoView.setVisibility(View.INVISIBLE);
         } else {

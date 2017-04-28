@@ -24,6 +24,8 @@ import android.content.DialogInterface;
 import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
 import android.graphics.Point;
+import android.util.DisplayMetrics;
+import android.util.TypedValue;
 import android.view.Display;
 import android.view.WindowManager;
 import android.widget.Toast;
@@ -134,5 +136,10 @@ public class Utils {
             time = String.format("%d:%02d", minutes, seconds);
         }
         return time;
+    }
+
+    public static float d2p(Context context, float dipValue) {
+        DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dipValue, metrics);
     }
 }
