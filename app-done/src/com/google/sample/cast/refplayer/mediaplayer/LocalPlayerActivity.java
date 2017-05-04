@@ -77,17 +77,6 @@ import java.util.TimerTask;
 public class LocalPlayerActivity extends AppCompatActivity {
 
     private static final String TAG = "LocalPlayerActivity";
-    private VideoView videoView;
-    private TextView titleView;
-    private TextView description;
-    private TextView startText;
-    private TextView endText;
-    private SeekBar seekbar;
-    private ImageView pause;
-    private ProgressBar progressBar;
-    private View controllers;
-    private View container;
-    private ImageView coverArtView;
     private Timer mSeekbarTimer;
     private Timer mControllersTimer;
     private PlaybackState mPlaybackState;
@@ -96,14 +85,11 @@ public class LocalPlayerActivity extends AppCompatActivity {
     private MediaItem mSelectedMedia;
     private boolean mControllersVisible;
     private int mDuration;
-    private TextView author;
-    private ImageButton playCircle;
     private PlaybackLocation mLocation;
     private CastContext mCastContext;
     private CastSession mCastSession;
     private SessionManagerListener<CastSession> mSessionManagerListener;
     private MenuItem mediaRouteMenuItem;
-    private MediaRouteButton mediaRouteButton;
 
     private PlayerActivityBinding binding;
 
@@ -126,7 +112,18 @@ public class LocalPlayerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = DataBindingUtil.setContentView(this,R.layout.player_activity);
-        loadViews();
+
+        binding.description.setMovementMethod(new ScrollingMovementMethod());
+        binding.startText.setText(Utils.formatMillis(0));
+        ViewCompat.setTransitionName(binding.coverArtView, getString(R.string.transition_image));
+        binding.playCircle.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                togglePlayback();
+            }
+        });
+        CastButtonFactory.setUpMediaRouteButton(getApplicationContext(), binding.mediaRouteButton);
+
         setupControlsCallbacks();
         setupCastListener();
         mCastContext = CastContext.getSharedInstance(this);
@@ -139,7 +136,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
             setupActionBar();
             boolean shouldStartPlayback = bundle.getBoolean("shouldStart");
             int startPosition = bundle.getInt("startPosition", 0);
-            videoView.setVideoURI(Uri.parse(mSelectedMedia.getUrl()));
+            binding.videoView.setVideoURI(Uri.parse(mSelectedMedia.getUrl()));
             Log.d(TAG, "Setting url of the VideoView to: " + mSelectedMedia.getUrl());
             if (shouldStartPlayback) {
                 // this will be the case only if we are coming from the
@@ -148,9 +145,9 @@ public class LocalPlayerActivity extends AppCompatActivity {
                 updatePlaybackLocation(PlaybackLocation.LOCAL);
                 updatePlayButton(mPlaybackState);
                 if (startPosition > 0) {
-                    videoView.seekTo(startPosition);
+                    binding.videoView.seekTo(startPosition);
                 }
-                videoView.start();
+                binding.videoView.start();
                 startControllersTimer();
             } else {
                 // we should load the video but pause it
@@ -164,7 +161,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
                 updatePlayButton(mPlaybackState);
             }
         }
-        if (titleView != null) {
+        if (binding.title != null) {
             updateMetadata(true);
         }
     }
@@ -218,8 +215,8 @@ public class LocalPlayerActivity extends AppCompatActivity {
                 if (null != mSelectedMedia) {
 
                     if (mPlaybackState == PlaybackState.PLAYING) {
-                        videoView.pause();
-                        loadRemoteMedia(seekbar.getProgress(), true);
+                        binding.videoView.pause();
+                        loadRemoteMedia(binding.seekBar.getProgress(), true);
                         return;
                     } else {
                         mPlaybackState = PlaybackState.IDLE;
@@ -262,8 +259,8 @@ public class LocalPlayerActivity extends AppCompatActivity {
         startControllersTimer();
         switch (mLocation) {
             case LOCAL:
-                videoView.seekTo(position);
-                videoView.start();
+                binding.videoView.seekTo(position);
+                binding.videoView.start();
                 break;
             case REMOTE:
                 mPlaybackState = PlaybackState.BUFFERING;
@@ -282,7 +279,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
             case PAUSED:
                 switch (mLocation) {
                     case LOCAL:
-                        videoView.start();
+                        binding.videoView.start();
                         Log.d(TAG, "Playing locally...");
                         mPlaybackState = PlaybackState.PLAYING;
                         startControllersTimer();
@@ -299,22 +296,22 @@ public class LocalPlayerActivity extends AppCompatActivity {
 
             case PLAYING:
                 mPlaybackState = PlaybackState.PAUSED;
-                videoView.pause();
+                binding.videoView.pause();
                 break;
 
             case IDLE:
                 switch (mLocation) {
                     case LOCAL:
-                        videoView.setVideoURI(Uri.parse(mSelectedMedia.getUrl()));
-                        videoView.seekTo(0);
-                        videoView.start();
+                        binding.videoView.setVideoURI(Uri.parse(mSelectedMedia.getUrl()));
+                        binding.videoView.seekTo(0);
+                        binding.videoView.start();
                         mPlaybackState = PlaybackState.PLAYING;
                         restartTrickplayTimer();
                         updatePlaybackLocation(PlaybackLocation.LOCAL);
                         break;
                     case REMOTE:
                         if (mCastSession != null && mCastSession.isConnected()) {
-                            loadRemoteMedia(seekbar.getProgress(), true);
+                            loadRemoteMedia(binding.seekBar.getProgress(), true);
                         }
                         break;
                     default:
@@ -368,12 +365,12 @@ public class LocalPlayerActivity extends AppCompatActivity {
 
     private void setCoverArtStatus(String url) {
         if (url != null) {
-            Glide.with(this).load(url).into(coverArtView);
-            coverArtView.setVisibility(View.VISIBLE);
-            videoView.setVisibility(View.INVISIBLE);
+            Glide.with(this).load(url).into(binding.coverArtView);
+            binding.coverArtView.setVisibility(View.VISIBLE);
+            binding.videoView.setVisibility(View.INVISIBLE);
         } else {
-            coverArtView.setVisibility(View.GONE);
-            videoView.setVisibility(View.VISIBLE);
+            binding.coverArtView.setVisibility(View.GONE);
+            binding.videoView.setVisibility(View.VISIBLE);
         }
     }
 
@@ -412,12 +409,12 @@ public class LocalPlayerActivity extends AppCompatActivity {
     private void updateControllersVisibility(boolean show) {
         if (show) {
             getSupportActionBar().show();
-            controllers.setVisibility(View.VISIBLE);
+            binding.controllers.setVisibility(View.VISIBLE);
         } else {
             if (!Utils.isOrientationPortrait(this)) {
                 getSupportActionBar().hide();
             }
-            controllers.setVisibility(View.INVISIBLE);
+            binding.controllers.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -436,7 +433,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
             }
             // since we are playing locally, we need to stop the playback of
             // video (if user is not watching, pause it!)
-            videoView.pause();
+            binding.videoView.pause();
             mPlaybackState = PlaybackState.PAUSED;
             updatePlayButton(PlaybackState.PAUSED);
         }
@@ -501,7 +498,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     if (mLocation == PlaybackLocation.LOCAL) {
-                        int currentPos = videoView.getCurrentPosition();
+                        int currentPos = binding.videoView.getCurrentPosition();
                         updateSeekbar(currentPos, mDuration);
                     }
                 }
@@ -510,7 +507,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
     }
 
     private void setupControlsCallbacks() {
-        videoView.setOnErrorListener(new OnErrorListener() {
+        binding.videoView.setOnErrorListener(new OnErrorListener() {
 
             @Override
             public boolean onError(MediaPlayer mp, int what, int extra) {
@@ -525,26 +522,26 @@ public class LocalPlayerActivity extends AppCompatActivity {
                     msg = getString(R.string.video_error_unknown_error);
                 }
                 Utils.showErrorDialog(LocalPlayerActivity.this, msg);
-                videoView.stopPlayback();
+                binding.videoView.stopPlayback();
                 mPlaybackState = PlaybackState.IDLE;
                 updatePlayButton(mPlaybackState);
                 return true;
             }
         });
 
-        videoView.setOnPreparedListener(new OnPreparedListener() {
+        binding.videoView.setOnPreparedListener(new OnPreparedListener() {
 
             @Override
             public void onPrepared(MediaPlayer mp) {
                 Log.d(TAG, "onPrepared is reached");
                 mDuration = mp.getDuration();
-                endText.setText(Utils.formatMillis(mDuration));
-                seekbar.setMax(mDuration);
+                binding.endText.setText(Utils.formatMillis(mDuration));
+                binding.seekBar.setMax(mDuration);
                 restartTrickplayTimer();
             }
         });
 
-        videoView.setOnCompletionListener(new OnCompletionListener() {
+        binding.videoView.setOnCompletionListener(new OnCompletionListener() {
 
             @Override
             public void onCompletion(MediaPlayer mp) {
@@ -555,7 +552,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
             }
         });
 
-        videoView.setOnTouchListener(new OnTouchListener() {
+        binding.videoView.setOnTouchListener(new OnTouchListener() {
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -567,14 +564,14 @@ public class LocalPlayerActivity extends AppCompatActivity {
             }
         });
 
-        seekbar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+        binding.seekBar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 if (mPlaybackState == PlaybackState.PLAYING) {
                     play(seekBar.getProgress());
                 } else if (mPlaybackState != PlaybackState.IDLE) {
-                    videoView.seekTo(seekBar.getProgress());
+                    binding.videoView.seekTo(seekBar.getProgress());
                 }
                 startControllersTimer();
             }
@@ -582,18 +579,18 @@ public class LocalPlayerActivity extends AppCompatActivity {
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
                 stopTrickplayTimer();
-                videoView.pause();
+                binding.videoView.pause();
                 stopControllersTimer();
             }
 
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress,
                     boolean fromUser) {
-                startText.setText(Utils.formatMillis(progress));
+                binding.startText.setText(Utils.formatMillis(progress));
             }
         });
 
-        pause.setOnClickListener(new OnClickListener() {
+        binding.pause.setOnClickListener(new OnClickListener() {
 
             @Override
             public void onClick(View v) {
@@ -605,42 +602,42 @@ public class LocalPlayerActivity extends AppCompatActivity {
     }
 
     private void updateSeekbar(int position, int duration) {
-        seekbar.setProgress(position);
-        seekbar.setMax(duration);
-        startText.setText(Utils.formatMillis(position));
-        endText.setText(Utils.formatMillis(duration));
+        binding.seekBar.setProgress(position);
+        binding.seekBar.setMax(duration);
+        binding.startText.setText(Utils.formatMillis(position));
+        binding.endText.setText(Utils.formatMillis(duration));
     }
 
     private void updatePlayButton(PlaybackState state) {
         Log.d(TAG, "Controls: PlayBackState: " + state);
         boolean isConnected = (mCastSession != null)
                 && (mCastSession.isConnected() || mCastSession.isConnecting());
-        controllers.setVisibility(isConnected ? View.GONE : View.VISIBLE);
-        playCircle.setVisibility(isConnected ? View.GONE : View.VISIBLE);
+        binding.controllers.setVisibility(isConnected ? View.GONE : View.VISIBLE);
+        binding.playCircle.setVisibility(isConnected ? View.GONE : View.VISIBLE);
         switch (state) {
             case PLAYING:
-                progressBar.setVisibility(View.INVISIBLE);
-                pause.setVisibility(View.VISIBLE);
-                pause.setImageDrawable(
+                binding.progressBar.setVisibility(View.INVISIBLE);
+                binding.pause.setVisibility(View.VISIBLE);
+                binding.pause.setImageDrawable(
                         getResources().getDrawable(R.drawable.ic_av_pause_dark));
-                playCircle.setVisibility(isConnected ? View.VISIBLE : View.GONE);
+                binding.playCircle.setVisibility(isConnected ? View.VISIBLE : View.GONE);
                 break;
             case IDLE:
-                playCircle.setVisibility(View.VISIBLE);
-                controllers.setVisibility(View.GONE);
-                coverArtView.setVisibility(View.VISIBLE);
-                videoView.setVisibility(View.INVISIBLE);
+                binding.playCircle.setVisibility(View.VISIBLE);
+                binding.controllers.setVisibility(View.GONE);
+                binding.coverArtView.setVisibility(View.VISIBLE);
+                binding.videoView.setVisibility(View.INVISIBLE);
                 break;
             case PAUSED:
-                progressBar.setVisibility(View.INVISIBLE);
-                pause.setVisibility(View.VISIBLE);
-                pause.setImageDrawable(
+                binding.progressBar.setVisibility(View.INVISIBLE);
+                binding.pause.setVisibility(View.VISIBLE);
+                binding.pause.setImageDrawable(
                         getResources().getDrawable(R.drawable.ic_av_play_dark));
-                playCircle.setVisibility(isConnected ? View.VISIBLE : View.GONE);
+                binding.playCircle.setVisibility(isConnected ? View.VISIBLE : View.GONE);
                 break;
             case BUFFERING:
-                pause.setVisibility(View.INVISIBLE);
-                progressBar.setVisibility(View.VISIBLE);
+                binding.pause.setVisibility(View.INVISIBLE);
+                binding.progressBar.setVisibility(View.VISIBLE);
                 break;
             default:
                 break;
@@ -660,7 +657,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
                 getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
             }
             updateMetadata(false);
-            container.setBackgroundColor(getResources().getColor(R.color.black));
+            binding.container.setBackgroundColor(getResources().getColor(R.color.black));
 
         } else {
             getWindow().setFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN,
@@ -671,37 +668,37 @@ public class LocalPlayerActivity extends AppCompatActivity {
                 getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
             }
             updateMetadata(true);
-            container.setBackgroundColor(getResources().getColor(R.color.white));
+            binding.container.setBackgroundColor(getResources().getColor(R.color.white));
         }
     }
 
     private void updateMetadata(boolean visible) {
         Point displaySize;
         if (!visible) {
-            description.setVisibility(View.GONE);
-            titleView.setVisibility(View.GONE);
-            author.setVisibility(View.GONE);
+            binding.description.setVisibility(View.GONE);
+            binding.title.setVisibility(View.GONE);
+            binding.author.setVisibility(View.GONE);
             displaySize = Utils.getDisplaySize(this);
             RelativeLayout.LayoutParams lp = new
                     RelativeLayout.LayoutParams(displaySize.x,
                     displaySize.y + getSupportActionBar().getHeight());
             lp.addRule(RelativeLayout.CENTER_IN_PARENT);
-            videoView.setLayoutParams(lp);
-            videoView.invalidate();
+            binding.videoView.setLayoutParams(lp);
+            binding.videoView.invalidate();
         } else {
-            description.setText(mSelectedMedia.getSubTitle());
-            titleView.setText(mSelectedMedia.getTitle());
-            author.setText(mSelectedMedia.getStudio());
-            description.setVisibility(View.VISIBLE);
-            titleView.setVisibility(View.VISIBLE);
-            author.setVisibility(View.VISIBLE);
+            binding.description.setText(mSelectedMedia.getSubTitle());
+            binding.title.setText(mSelectedMedia.getTitle());
+            binding.author.setText(mSelectedMedia.getStudio());
+            binding.description.setVisibility(View.VISIBLE);
+            binding.title.setVisibility(View.VISIBLE);
+            binding.author.setVisibility(View.VISIBLE);
             displaySize = Utils.getDisplaySize(this);
             RelativeLayout.LayoutParams lp = new
                     RelativeLayout.LayoutParams(displaySize.x,
                     (int) (displaySize.x * mAspectRatio));
             lp.addRule(RelativeLayout.BELOW, R.id.toolbar);
-            videoView.setLayoutParams(lp);
-            videoView.invalidate();
+            binding.videoView.setLayoutParams(lp);
+            binding.videoView.invalidate();
         }
     }
 
@@ -731,33 +728,6 @@ public class LocalPlayerActivity extends AppCompatActivity {
         toolbar.setTitle(mSelectedMedia.getTitle());
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-    }
-
-    private void loadViews() {
-        videoView = (VideoView) findViewById(R.id.videoView);
-        titleView = (TextView) findViewById(R.id.title);
-        description = (TextView) findViewById(R.id.description);
-        description.setMovementMethod(new ScrollingMovementMethod());
-        author = (TextView) findViewById(R.id.author);
-        startText = (TextView) findViewById(R.id.startText);
-        startText.setText(Utils.formatMillis(0));
-        endText = (TextView) findViewById(R.id.endText);
-        seekbar = (SeekBar) findViewById(R.id.seekBar);
-        pause = (ImageView) findViewById(R.id.pause);
-        progressBar = (ProgressBar) findViewById(R.id.progressBar);
-        controllers = findViewById(R.id.controllers);
-        container = findViewById(R.id.container);
-        coverArtView = (ImageView) findViewById(R.id.coverArtView);
-        ViewCompat.setTransitionName(coverArtView, getString(R.string.transition_image));
-        playCircle = (ImageButton) findViewById(R.id.playCircle);
-        playCircle.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                togglePlayback();
-            }
-        });
-        mediaRouteButton = (MediaRouteButton) findViewById(R.id.mediaRouteButton);
-        CastButtonFactory.setUpMediaRouteButton(getApplicationContext(), mediaRouteButton);
     }
 
     private MediaInfo buildMediaInfo() {
