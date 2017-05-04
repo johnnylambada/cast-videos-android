@@ -22,7 +22,7 @@
                 android:layout_height="match_parent">
 
     <VideoView
-            android:id="@+id/videoView1"
+            android:id="@+id/videoView"
             android:layout_width="wrap_content"
             android:layout_height="200dp"
             android:layout_alignParentLeft="true"
@@ -31,10 +31,10 @@
             android:layout_centerInParent="true"/>
 
     <RelativeLayout
-            android:layout_alignBottom="@+id/videoView1"
-            android:layout_alignLeft="@+id/videoView1"
-            android:layout_alignRight="@+id/videoView1"
-            android:layout_alignTop="@+id/videoView1"
+            android:layout_alignBottom="@+id/videoView"
+            android:layout_alignLeft="@+id/videoView"
+            android:layout_alignRight="@+id/videoView"
+            android:layout_alignTop="@+id/videoView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content">
 
@@ -59,15 +59,15 @@
             android:id="@+id/controllers"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignBottom="@+id/videoView1"
-            android:layout_alignLeft="@+id/videoView1"
-            android:layout_alignRight="@+id/videoView1"
-            android:layout_alignTop="@+id/videoView1"
+            android:layout_alignBottom="@+id/videoView"
+            android:layout_alignLeft="@+id/videoView"
+            android:layout_alignRight="@+id/videoView"
+            android:layout_alignTop="@+id/videoView"
             android:visibility="visible"
             android:background="@drawable/player_bg_gradient_dark">
 
         <ProgressBar
-                android:id="@+id/progressBar1"
+                android:id="@+id/progressBar"
                 style="?android:attr/progressBarStyleLarge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -83,7 +83,7 @@
                 android:layout_alignParentBottom="true">
 
             <ImageView
-                    android:id="@+id/imageView2"
+                    android:id="@+id/pause"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentLeft="true"
@@ -94,7 +94,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="fill_parent"
                     android:layout_marginLeft="5dp"
-                    android:layout_toRightOf="@+id/imageView2"
+                    android:layout_toRightOf="@+id/pause"
                     android:gravity="center_vertical"
                     android:maxLines="1"
                     android:text="0:00"
@@ -112,7 +112,7 @@
                     android:textColor="@color/white"/>
 
             <SeekBar
-                    android:id="@+id/seekBar1"
+                    android:id="@+id/seekBar"
                     android:layout_width="fill_parent"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
@@ -125,11 +125,11 @@
     </RelativeLayout>
 
     <TextView
-            android:id="@+id/textView1"
+            android:id="@+id/title"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
-            android:layout_below="@+id/videoView1"
+            android:layout_below="@+id/videoView"
             android:layout_marginLeft="16dp"
             android:layout_marginRight="16dp"
             android:layout_marginTop="10dp"
@@ -140,30 +140,30 @@
         android:id="@+id/mediaRouteButton"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_below="@id/videoView1"
+        android:layout_below="@id/videoView"
         android:layout_alignParentRight="true"
         android:layout_margin="16dp"
         />
 
     <TextView
-            android:id="@+id/textView3"
+            android:id="@+id/subtitle"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_alignLeft="@+id/textView1"
-            android:layout_alignRight="@+id/textView1"
-            android:layout_below="@+id/textView1"
+            android:layout_alignLeft="@+id/title"
+            android:layout_alignRight="@+id/title"
+            android:layout_below="@+id/title"
             android:layout_marginTop="2dp"
             android:lines="1"
             android:textSize="15sp"/>
 
     <TextView
-            android:id="@+id/textView2"
+            android:id="@+id/description"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
-            android:layout_alignLeft="@+id/textView1"
-            android:layout_alignRight="@+id/textView1"
-            android:layout_below="@+id/textView3"
+            android:layout_alignLeft="@+id/title"
+            android:layout_alignRight="@+id/title"
+            android:layout_below="@+id/subtitle"
             android:layout_marginBottom="5dp"
             android:layout_marginTop="10dp"
             android:fontFamily="sans-serif-light"

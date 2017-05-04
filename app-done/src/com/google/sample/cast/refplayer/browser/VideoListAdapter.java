@@ -95,8 +95,8 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.View
 
         public static ViewHolder newInstance(View parent) {
             ImageView imgView = (ImageView) parent.findViewById(R.id.imageView1);
-            TextView titleView = (TextView) parent.findViewById(R.id.textView1);
-            TextView descriptionView = (TextView) parent.findViewById(R.id.textView2);
+            TextView titleView = (TextView) parent.findViewById(R.id.title);
+            TextView descriptionView = (TextView) parent.findViewById(R.id.description);
             View textContainer = parent.findViewById(R.id.text_container);
             return new ViewHolder(parent, imgView, textContainer, titleView, descriptionView);
         }

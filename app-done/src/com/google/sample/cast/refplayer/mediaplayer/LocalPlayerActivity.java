@@ -734,17 +734,17 @@ public class LocalPlayerActivity extends AppCompatActivity {
     }
 
     private void loadViews() {
-        mVideoView = (VideoView) findViewById(R.id.videoView1);
-        mTitleView = (TextView) findViewById(R.id.textView1);
-        mDescriptionView = (TextView) findViewById(R.id.textView2);
+        mVideoView = (VideoView) findViewById(R.id.videoView);
+        mTitleView = (TextView) findViewById(R.id.title);
+        mDescriptionView = (TextView) findViewById(R.id.description);
         mDescriptionView.setMovementMethod(new ScrollingMovementMethod());
-        mAuthorView = (TextView) findViewById(R.id.textView3);
+        mAuthorView = (TextView) findViewById(R.id.subtitle);
         mStartText = (TextView) findViewById(R.id.startText);
         mStartText.setText(Utils.formatMillis(0));
         mEndText = (TextView) findViewById(R.id.endText);
-        mSeekbar = (SeekBar) findViewById(R.id.seekBar1);
-        mPlayPause = (ImageView) findViewById(R.id.imageView2);
-        mLoading = (ProgressBar) findViewById(R.id.progressBar1);
+        mSeekbar = (SeekBar) findViewById(R.id.seekBar);
+        mPlayPause = (ImageView) findViewById(R.id.pause);
+        mLoading = (ProgressBar) findViewById(R.id.progressBar);
         mControllers = findViewById(R.id.controllers);
         mContainer = findViewById(R.id.container);
         mCoverArt = (ImageView) findViewById(R.id.coverArtView);
