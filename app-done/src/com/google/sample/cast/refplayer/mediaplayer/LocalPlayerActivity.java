@@ -77,17 +77,17 @@ import java.util.TimerTask;
 public class LocalPlayerActivity extends AppCompatActivity {
 
     private static final String TAG = "LocalPlayerActivity";
-    private VideoView mVideoView;
-    private TextView mTitleView;
-    private TextView mDescriptionView;
-    private TextView mStartText;
-    private TextView mEndText;
-    private SeekBar mSeekbar;
-    private ImageView mPlayPause;
-    private ProgressBar mLoading;
-    private View mControllers;
-    private View mContainer;
-    private ImageView mCoverArt;
+    private VideoView videoView;
+    private TextView titleView;
+    private TextView description;
+    private TextView startText;
+    private TextView endText;
+    private SeekBar seekbar;
+    private ImageView pause;
+    private ProgressBar progressBar;
+    private View controllers;
+    private View container;
+    private ImageView coverArtView;
     private Timer mSeekbarTimer;
     private Timer mControllersTimer;
     private PlaybackState mPlaybackState;
@@ -96,14 +96,14 @@ public class LocalPlayerActivity extends AppCompatActivity {
     private MediaItem mSelectedMedia;
     private boolean mControllersVisible;
     private int mDuration;
-    private TextView mAuthorView;
-    private ImageButton mPlayCircle;
+    private TextView author;
+    private ImageButton playCircle;
     private PlaybackLocation mLocation;
     private CastContext mCastContext;
     private CastSession mCastSession;
     private SessionManagerListener<CastSession> mSessionManagerListener;
     private MenuItem mediaRouteMenuItem;
-    private MediaRouteButton mMediaRouteButton;
+    private MediaRouteButton mediaRouteButton;
 
     private PlayerActivityBinding binding;
 
@@ -139,7 +139,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
             setupActionBar();
             boolean shouldStartPlayback = bundle.getBoolean("shouldStart");
             int startPosition = bundle.getInt("startPosition", 0);
-            mVideoView.setVideoURI(Uri.parse(mSelectedMedia.getUrl()));
+            videoView.setVideoURI(Uri.parse(mSelectedMedia.getUrl()));
             Log.d(TAG, "Setting url of the VideoView to: " + mSelectedMedia.getUrl());
             if (shouldStartPlayback) {
                 // this will be the case only if we are coming from the
@@ -148,9 +148,9 @@ public class LocalPlayerActivity extends AppCompatActivity {
                 updatePlaybackLocation(PlaybackLocation.LOCAL);
                 updatePlayButton(mPlaybackState);
                 if (startPosition > 0) {
-                    mVideoView.seekTo(startPosition);
+                    videoView.seekTo(startPosition);
                 }
-                mVideoView.start();
+                videoView.start();
                 startControllersTimer();
             } else {
                 // we should load the video but pause it
@@ -164,7 +164,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
                 updatePlayButton(mPlaybackState);
             }
         }
-        if (mTitleView != null) {
+        if (titleView != null) {
             updateMetadata(true);
         }
     }
@@ -218,8 +218,8 @@ public class LocalPlayerActivity extends AppCompatActivity {
                 if (null != mSelectedMedia) {
 
                     if (mPlaybackState == PlaybackState.PLAYING) {
-                        mVideoView.pause();
-                        loadRemoteMedia(mSeekbar.getProgress(), true);
+                        videoView.pause();
+                        loadRemoteMedia(seekbar.getProgress(), true);
                         return;
                     } else {
                         mPlaybackState = PlaybackState.IDLE;
@@ -262,8 +262,8 @@ public class LocalPlayerActivity extends AppCompatActivity {
         startControllersTimer();
         switch (mLocation) {
             case LOCAL:
-                mVideoView.seekTo(position);
-                mVideoView.start();
+                videoView.seekTo(position);
+                videoView.start();
                 break;
             case REMOTE:
                 mPlaybackState = PlaybackState.BUFFERING;
@@ -282,7 +282,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
             case PAUSED:
                 switch (mLocation) {
                     case LOCAL:
-                        mVideoView.start();
+                        videoView.start();
                         Log.d(TAG, "Playing locally...");
                         mPlaybackState = PlaybackState.PLAYING;
                         startControllersTimer();
@@ -299,22 +299,22 @@ public class LocalPlayerActivity extends AppCompatActivity {
 
             case PLAYING:
                 mPlaybackState = PlaybackState.PAUSED;
-                mVideoView.pause();
+                videoView.pause();
                 break;
 
             case IDLE:
                 switch (mLocation) {
                     case LOCAL:
-                        mVideoView.setVideoURI(Uri.parse(mSelectedMedia.getUrl()));
-                        mVideoView.seekTo(0);
-                        mVideoView.start();
+                        videoView.setVideoURI(Uri.parse(mSelectedMedia.getUrl()));
+                        videoView.seekTo(0);
+                        videoView.start();
                         mPlaybackState = PlaybackState.PLAYING;
                         restartTrickplayTimer();
                         updatePlaybackLocation(PlaybackLocation.LOCAL);
                         break;
                     case REMOTE:
                         if (mCastSession != null && mCastSession.isConnected()) {
-                            loadRemoteMedia(mSeekbar.getProgress(), true);
+                            loadRemoteMedia(seekbar.getProgress(), true);
                         }
                         break;
                     default:
@@ -368,12 +368,12 @@ public class LocalPlayerActivity extends AppCompatActivity {
 
     private void setCoverArtStatus(String url) {
         if (url != null) {
-            Glide.with(this).load(url).into(mCoverArt);
-            mCoverArt.setVisibility(View.VISIBLE);
-            mVideoView.setVisibility(View.INVISIBLE);
+            Glide.with(this).load(url).into(coverArtView);
+            coverArtView.setVisibility(View.VISIBLE);
+            videoView.setVisibility(View.INVISIBLE);
         } else {
-            mCoverArt.setVisibility(View.GONE);
-            mVideoView.setVisibility(View.VISIBLE);
+            coverArtView.setVisibility(View.GONE);
+            videoView.setVisibility(View.VISIBLE);
         }
     }
 
@@ -412,12 +412,12 @@ public class LocalPlayerActivity extends AppCompatActivity {
     private void updateControllersVisibility(boolean show) {
         if (show) {
             getSupportActionBar().show();
-            mControllers.setVisibility(View.VISIBLE);
+            controllers.setVisibility(View.VISIBLE);
         } else {
             if (!Utils.isOrientationPortrait(this)) {
                 getSupportActionBar().hide();
             }
-            mControllers.setVisibility(View.INVISIBLE);
+            controllers.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -436,7 +436,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
             }
             // since we are playing locally, we need to stop the playback of
             // video (if user is not watching, pause it!)
-            mVideoView.pause();
+            videoView.pause();
             mPlaybackState = PlaybackState.PAUSED;
             updatePlayButton(PlaybackState.PAUSED);
         }
@@ -501,7 +501,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     if (mLocation == PlaybackLocation.LOCAL) {
-                        int currentPos = mVideoView.getCurrentPosition();
+                        int currentPos = videoView.getCurrentPosition();
                         updateSeekbar(currentPos, mDuration);
                     }
                 }
@@ -510,7 +510,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
     }
 
     private void setupControlsCallbacks() {
-        mVideoView.setOnErrorListener(new OnErrorListener() {
+        videoView.setOnErrorListener(new OnErrorListener() {
 
             @Override
             public boolean onError(MediaPlayer mp, int what, int extra) {
@@ -525,26 +525,26 @@ public class LocalPlayerActivity extends AppCompatActivity {
                     msg = getString(R.string.video_error_unknown_error);
                 }
                 Utils.showErrorDialog(LocalPlayerActivity.this, msg);
-                mVideoView.stopPlayback();
+                videoView.stopPlayback();
                 mPlaybackState = PlaybackState.IDLE;
                 updatePlayButton(mPlaybackState);
                 return true;
             }
         });
 
-        mVideoView.setOnPreparedListener(new OnPreparedListener() {
+        videoView.setOnPreparedListener(new OnPreparedListener() {
 
             @Override
             public void onPrepared(MediaPlayer mp) {
                 Log.d(TAG, "onPrepared is reached");
                 mDuration = mp.getDuration();
-                mEndText.setText(Utils.formatMillis(mDuration));
-                mSeekbar.setMax(mDuration);
+                endText.setText(Utils.formatMillis(mDuration));
+                seekbar.setMax(mDuration);
                 restartTrickplayTimer();
             }
         });
 
-        mVideoView.setOnCompletionListener(new OnCompletionListener() {
+        videoView.setOnCompletionListener(new OnCompletionListener() {
 
             @Override
             public void onCompletion(MediaPlayer mp) {
@@ -555,7 +555,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
             }
         });
 
-        mVideoView.setOnTouchListener(new OnTouchListener() {
+        videoView.setOnTouchListener(new OnTouchListener() {
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -567,14 +567,14 @@ public class LocalPlayerActivity extends AppCompatActivity {
             }
         });
 
-        mSeekbar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+        seekbar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 if (mPlaybackState == PlaybackState.PLAYING) {
                     play(seekBar.getProgress());
                 } else if (mPlaybackState != PlaybackState.IDLE) {
-                    mVideoView.seekTo(seekBar.getProgress());
+                    videoView.seekTo(seekBar.getProgress());
                 }
                 startControllersTimer();
             }
@@ -582,18 +582,18 @@ public class LocalPlayerActivity extends AppCompatActivity {
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
                 stopTrickplayTimer();
-                mVideoView.pause();
+                videoView.pause();
                 stopControllersTimer();
             }
 
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress,
                     boolean fromUser) {
-                mStartText.setText(Utils.formatMillis(progress));
+                startText.setText(Utils.formatMillis(progress));
             }
         });
 
-        mPlayPause.setOnClickListener(new OnClickListener() {
+        pause.setOnClickListener(new OnClickListener() {
 
             @Override
             public void onClick(View v) {
@@ -605,42 +605,42 @@ public class LocalPlayerActivity extends AppCompatActivity {
     }
 
     private void updateSeekbar(int position, int duration) {
-        mSeekbar.setProgress(position);
-        mSeekbar.setMax(duration);
-        mStartText.setText(Utils.formatMillis(position));
-        mEndText.setText(Utils.formatMillis(duration));
+        seekbar.setProgress(position);
+        seekbar.setMax(duration);
+        startText.setText(Utils.formatMillis(position));
+        endText.setText(Utils.formatMillis(duration));
     }
 
     private void updatePlayButton(PlaybackState state) {
         Log.d(TAG, "Controls: PlayBackState: " + state);
         boolean isConnected = (mCastSession != null)
                 && (mCastSession.isConnected() || mCastSession.isConnecting());
-        mControllers.setVisibility(isConnected ? View.GONE : View.VISIBLE);
-        mPlayCircle.setVisibility(isConnected ? View.GONE : View.VISIBLE);
+        controllers.setVisibility(isConnected ? View.GONE : View.VISIBLE);
+        playCircle.setVisibility(isConnected ? View.GONE : View.VISIBLE);
         switch (state) {
             case PLAYING:
-                mLoading.setVisibility(View.INVISIBLE);
-                mPlayPause.setVisibility(View.VISIBLE);
-                mPlayPause.setImageDrawable(
+                progressBar.setVisibility(View.INVISIBLE);
+                pause.setVisibility(View.VISIBLE);
+                pause.setImageDrawable(
                         getResources().getDrawable(R.drawable.ic_av_pause_dark));
-                mPlayCircle.setVisibility(isConnected ? View.VISIBLE : View.GONE);
+                playCircle.setVisibility(isConnected ? View.VISIBLE : View.GONE);
                 break;
             case IDLE:
-                mPlayCircle.setVisibility(View.VISIBLE);
-                mControllers.setVisibility(View.GONE);
-                mCoverArt.setVisibility(View.VISIBLE);
-                mVideoView.setVisibility(View.INVISIBLE);
+                playCircle.setVisibility(View.VISIBLE);
+                controllers.setVisibility(View.GONE);
+                coverArtView.setVisibility(View.VISIBLE);
+                videoView.setVisibility(View.INVISIBLE);
                 break;
             case PAUSED:
-                mLoading.setVisibility(View.INVISIBLE);
-                mPlayPause.setVisibility(View.VISIBLE);
-                mPlayPause.setImageDrawable(
+                progressBar.setVisibility(View.INVISIBLE);
+                pause.setVisibility(View.VISIBLE);
+                pause.setImageDrawable(
                         getResources().getDrawable(R.drawable.ic_av_play_dark));
-                mPlayCircle.setVisibility(isConnected ? View.VISIBLE : View.GONE);
+                playCircle.setVisibility(isConnected ? View.VISIBLE : View.GONE);
                 break;
             case BUFFERING:
-                mPlayPause.setVisibility(View.INVISIBLE);
-                mLoading.setVisibility(View.VISIBLE);
+                pause.setVisibility(View.INVISIBLE);
+                progressBar.setVisibility(View.VISIBLE);
                 break;
             default:
                 break;
@@ -660,7 +660,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
                 getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
             }
             updateMetadata(false);
-            mContainer.setBackgroundColor(getResources().getColor(R.color.black));
+            container.setBackgroundColor(getResources().getColor(R.color.black));
 
         } else {
             getWindow().setFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN,
@@ -671,37 +671,37 @@ public class LocalPlayerActivity extends AppCompatActivity {
                 getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
             }
             updateMetadata(true);
-            mContainer.setBackgroundColor(getResources().getColor(R.color.white));
+            container.setBackgroundColor(getResources().getColor(R.color.white));
         }
     }
 
     private void updateMetadata(boolean visible) {
         Point displaySize;
         if (!visible) {
-            mDescriptionView.setVisibility(View.GONE);
-            mTitleView.setVisibility(View.GONE);
-            mAuthorView.setVisibility(View.GONE);
+            description.setVisibility(View.GONE);
+            titleView.setVisibility(View.GONE);
+            author.setVisibility(View.GONE);
             displaySize = Utils.getDisplaySize(this);
             RelativeLayout.LayoutParams lp = new
                     RelativeLayout.LayoutParams(displaySize.x,
                     displaySize.y + getSupportActionBar().getHeight());
             lp.addRule(RelativeLayout.CENTER_IN_PARENT);
-            mVideoView.setLayoutParams(lp);
-            mVideoView.invalidate();
+            videoView.setLayoutParams(lp);
+            videoView.invalidate();
         } else {
-            mDescriptionView.setText(mSelectedMedia.getSubTitle());
-            mTitleView.setText(mSelectedMedia.getTitle());
-            mAuthorView.setText(mSelectedMedia.getStudio());
-            mDescriptionView.setVisibility(View.VISIBLE);
-            mTitleView.setVisibility(View.VISIBLE);
-            mAuthorView.setVisibility(View.VISIBLE);
+            description.setText(mSelectedMedia.getSubTitle());
+            titleView.setText(mSelectedMedia.getTitle());
+            author.setText(mSelectedMedia.getStudio());
+            description.setVisibility(View.VISIBLE);
+            titleView.setVisibility(View.VISIBLE);
+            author.setVisibility(View.VISIBLE);
             displaySize = Utils.getDisplaySize(this);
             RelativeLayout.LayoutParams lp = new
                     RelativeLayout.LayoutParams(displaySize.x,
                     (int) (displaySize.x * mAspectRatio));
             lp.addRule(RelativeLayout.BELOW, R.id.toolbar);
-            mVideoView.setLayoutParams(lp);
-            mVideoView.invalidate();
+            videoView.setLayoutParams(lp);
+            videoView.invalidate();
         }
     }
 
@@ -734,30 +734,30 @@ public class LocalPlayerActivity extends AppCompatActivity {
     }
 
     private void loadViews() {
-        mVideoView = (VideoView) findViewById(R.id.videoView);
-        mTitleView = (TextView) findViewById(R.id.title);
-        mDescriptionView = (TextView) findViewById(R.id.description);
-        mDescriptionView.setMovementMethod(new ScrollingMovementMethod());
-        mAuthorView = (TextView) findViewById(R.id.subtitle);
-        mStartText = (TextView) findViewById(R.id.startText);
-        mStartText.setText(Utils.formatMillis(0));
-        mEndText = (TextView) findViewById(R.id.endText);
-        mSeekbar = (SeekBar) findViewById(R.id.seekBar);
-        mPlayPause = (ImageView) findViewById(R.id.pause);
-        mLoading = (ProgressBar) findViewById(R.id.progressBar);
-        mControllers = findViewById(R.id.controllers);
-        mContainer = findViewById(R.id.container);
-        mCoverArt = (ImageView) findViewById(R.id.coverArtView);
-        ViewCompat.setTransitionName(mCoverArt, getString(R.string.transition_image));
-        mPlayCircle = (ImageButton) findViewById(R.id.play_circle);
-        mPlayCircle.setOnClickListener(new OnClickListener() {
+        videoView = (VideoView) findViewById(R.id.videoView);
+        titleView = (TextView) findViewById(R.id.title);
+        description = (TextView) findViewById(R.id.description);
+        description.setMovementMethod(new ScrollingMovementMethod());
+        author = (TextView) findViewById(R.id.author);
+        startText = (TextView) findViewById(R.id.startText);
+        startText.setText(Utils.formatMillis(0));
+        endText = (TextView) findViewById(R.id.endText);
+        seekbar = (SeekBar) findViewById(R.id.seekBar);
+        pause = (ImageView) findViewById(R.id.pause);
+        progressBar = (ProgressBar) findViewById(R.id.progressBar);
+        controllers = findViewById(R.id.controllers);
+        container = findViewById(R.id.container);
+        coverArtView = (ImageView) findViewById(R.id.coverArtView);
+        ViewCompat.setTransitionName(coverArtView, getString(R.string.transition_image));
+        playCircle = (ImageButton) findViewById(R.id.playCircle);
+        playCircle.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 togglePlayback();
             }
         });
-        mMediaRouteButton = (MediaRouteButton) findViewById(R.id.mediaRouteButton);
-        CastButtonFactory.setUpMediaRouteButton(getApplicationContext(),mMediaRouteButton);
+        mediaRouteButton = (MediaRouteButton) findViewById(R.id.mediaRouteButton);
+        CastButtonFactory.setUpMediaRouteButton(getApplicationContext(), mediaRouteButton);
     }
 
     private MediaInfo buildMediaInfo() {
