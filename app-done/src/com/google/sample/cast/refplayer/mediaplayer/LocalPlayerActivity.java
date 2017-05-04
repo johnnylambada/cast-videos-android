@@ -26,6 +26,7 @@ import com.google.android.gms.cast.framework.SessionManagerListener;
 import com.google.android.gms.cast.framework.media.RemoteMediaClient;
 import com.google.android.gms.common.images.WebImage;
 import com.google.sample.cast.refplayer.R;
+import com.google.sample.cast.refplayer.databinding.PlayerActivityBinding;
 import com.google.sample.cast.refplayer.expandedcontrols.ExpandedControlsActivity;
 import com.google.sample.cast.refplayer.settings.CastPreference;
 import com.google.sample.cast.refplayer.utils.MediaItem;
@@ -34,6 +35,7 @@ import com.google.sample.cast.refplayer.utils.Utils;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.databinding.DataBindingUtil;
 import android.graphics.Point;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
@@ -103,6 +105,8 @@ public class LocalPlayerActivity extends AppCompatActivity {
     private MenuItem mediaRouteMenuItem;
     private MediaRouteButton mMediaRouteButton;
 
+    private PlayerActivityBinding binding;
+
     /**
      * indicates whether we are doing a local or a remote playback
      */
@@ -121,7 +125,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.player_activity);
+        binding = DataBindingUtil.setContentView(this,R.layout.player_activity);
         loadViews();
         setupControlsCallbacks();
         setupCastListener();
