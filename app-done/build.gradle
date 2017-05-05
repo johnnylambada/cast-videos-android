@@ -25,10 +25,15 @@ android {
         minSdkVersion 14
         targetSdkVersion 25
         applicationId="com.google.sample.cast.refplayer"
+        jackOptions.enabled true
     }
     enforceUniquePackageName=false
     dexOptions {
         javaMaxHeapSize "4g"
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     lintOptions.abortOnError false
