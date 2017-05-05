@@ -54,7 +54,9 @@ import com.google.sample.cast.refplayer.databinding.PlayerActivityBinding;
 import com.google.sample.cast.refplayer.expandedcontrols.ExpandedControlsActivity;
 import com.google.sample.cast.refplayer.settings.CastPreference;
 import com.google.sample.cast.refplayer.utils.MediaItem;
+import com.google.sample.cast.refplayer.utils.OnSeekBarChangeListenerBuilder;
 import com.google.sample.cast.refplayer.utils.SessionManagerListenerBuilder;
+import com.google.sample.cast.refplayer.utils.TriConsumer;
 import com.google.sample.cast.refplayer.utils.Utils;
 
 import java.util.Timer;
@@ -197,24 +199,10 @@ public class LocalPlayerActivity extends AppCompatActivity {
         }
     }
 
-    private void play(int position) {
-        startControllersTimer();
-        switch (mLocation) {
-            case LOCAL:
-                binding.videoView.seekTo(position);
-                binding.videoView.start();
-                break;
-            case REMOTE:
-                mPlaybackState = PlaybackState.BUFFERING;
-                updatePlayButton(mPlaybackState);
-                mCastSession.getRemoteMediaClient().seek(position);
-                break;
-            default:
-                break;
-        }
-        restartTrickplayTimer();
-    }
-
+    /**
+     * Various buttons call this
+     * @param __ ignored
+     */
     public void togglePlayback(View __) {
         stopControllersTimer();
         switch (mPlaybackState) {
@@ -477,32 +465,40 @@ public class LocalPlayerActivity extends AppCompatActivity {
             startControllersTimer();
             return false;
         });
-
-        binding.seekBar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                if (mPlaybackState == PlaybackState.PLAYING) {
-                    play(seekBar.getProgress());
-                } else if (mPlaybackState != PlaybackState.IDLE) {
-                    binding.videoView.seekTo(seekBar.getProgress());
-                }
-                startControllersTimer();
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                stopTrickplayTimer();
-                binding.videoView.pause();
-                stopControllersTimer();
-            }
-
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress,
-                    boolean fromUser) {
-                binding.startText.setText(Utils.formatMillis(progress));
-            }
-        });
+        binding.seekBar.setOnSeekBarChangeListener(new OnSeekBarChangeListenerBuilder()
+                .withStartTrackingTouch(seekBar -> {
+                    stopTrickplayTimer();
+                    binding.videoView.pause();
+                    stopControllersTimer();
+                })
+                .withStopTrackingTouch(seekBar -> {
+                    if (mPlaybackState == PlaybackState.PLAYING) {
+                        final int position = seekBar.getProgress();
+                        startControllersTimer();
+                        switch (mLocation) {
+                            case LOCAL:
+                                binding.videoView.seekTo(position);
+                                binding.videoView.start();
+                                break;
+                            case REMOTE:
+                                mPlaybackState = PlaybackState.BUFFERING;
+                                updatePlayButton(mPlaybackState);
+                                mCastSession.getRemoteMediaClient().seek(position);
+                                break;
+                            default:
+                                break;
+                        }
+                        restartTrickplayTimer();
+                    } else if (mPlaybackState != PlaybackState.IDLE) {
+                        binding.videoView.seekTo(seekBar.getProgress());
+                    }
+                    startControllersTimer();
+                })
+                .withProgressChanged((__, progress, ___) -> {
+                    binding.startText.setText(Utils.formatMillis(progress));
+                })
+                .build()
+        );
     }
 
     private void updateSeekbar(int position, int duration) {
