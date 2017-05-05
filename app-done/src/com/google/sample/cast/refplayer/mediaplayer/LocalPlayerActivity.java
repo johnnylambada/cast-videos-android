@@ -16,6 +16,30 @@
 
 package com.google.sample.cast.refplayer.mediaplayer;
 
+import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.content.res.Configuration;
+import android.databinding.DataBindingUtil;
+import android.graphics.Point;
+import android.media.MediaPlayer;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.view.ViewCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.RelativeLayout;
+import android.widget.SeekBar;
+import android.widget.SeekBar.OnSeekBarChangeListener;
+
 import com.bumptech.glide.Glide;
 import com.google.android.gms.cast.MediaInfo;
 import com.google.android.gms.cast.MediaMetadata;
@@ -30,43 +54,8 @@ import com.google.sample.cast.refplayer.databinding.PlayerActivityBinding;
 import com.google.sample.cast.refplayer.expandedcontrols.ExpandedControlsActivity;
 import com.google.sample.cast.refplayer.settings.CastPreference;
 import com.google.sample.cast.refplayer.utils.MediaItem;
+import com.google.sample.cast.refplayer.utils.SessionManagerListenerBuilder;
 import com.google.sample.cast.refplayer.utils.Utils;
-
-import android.annotation.SuppressLint;
-import android.content.Intent;
-import android.content.res.Configuration;
-import android.databinding.DataBindingUtil;
-import android.graphics.Point;
-import android.media.MediaPlayer;
-import android.media.MediaPlayer.OnCompletionListener;
-import android.media.MediaPlayer.OnErrorListener;
-import android.media.MediaPlayer.OnPreparedListener;
-import android.net.Uri;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Handler;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.view.ViewCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.app.MediaRouteButton;
-import android.support.v7.widget.Toolbar;
-import android.text.method.ScrollingMovementMethod;
-import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.View.OnTouchListener;
-import android.view.WindowManager;
-import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
-import android.widget.SeekBar;
-import android.widget.SeekBar.OnSeekBarChangeListener;
-import android.widget.TextView;
-import android.widget.VideoView;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -119,7 +108,13 @@ public class LocalPlayerActivity extends AppCompatActivity {
         CastButtonFactory.setUpMediaRouteButton(getApplicationContext(), binding.mediaRouteButton);
 
         setupControlsCallbacks();
-        setupCastListener();
+        mSessionManagerListener = new SessionManagerListenerBuilder<CastSession>()
+                .withSessionStarted((s,__)->onApplicationConnected(s))
+                .withSessionStartFailed((__,___)->onApplicationDisconnected())
+                .withSessionEnded((__,___) -> onApplicationDisconnected())
+                .withSessionResumed((s,__)->onApplicationConnected(s))
+                .withSessionResumeFailed((__,___)->onApplicationDisconnected())
+                .build();
         mCastContext = CastContext.getSharedInstance(this);
         mCastSession = mCastContext.getSessionManager().getCurrentCastSession();
         // see what we need to play and where
@@ -159,75 +154,29 @@ public class LocalPlayerActivity extends AppCompatActivity {
         }
     }
 
-    private void setupCastListener() {
-        mSessionManagerListener = new SessionManagerListener<CastSession>() {
+    private void onApplicationConnected(CastSession castSession) {
+        mCastSession = castSession;
+        if (null != mSelectedMedia) {
 
-            @Override
-            public void onSessionEnded(CastSession session, int error) {
-                onApplicationDisconnected();
-            }
-
-            @Override
-            public void onSessionResumed(CastSession session, boolean wasSuspended) {
-                onApplicationConnected(session);
-            }
-
-            @Override
-            public void onSessionResumeFailed(CastSession session, int error) {
-                onApplicationDisconnected();
-            }
-
-            @Override
-            public void onSessionStarted(CastSession session, String sessionId) {
-                onApplicationConnected(session);
-            }
-
-            @Override
-            public void onSessionStartFailed(CastSession session, int error) {
-                onApplicationDisconnected();
-            }
-
-            @Override
-            public void onSessionStarting(CastSession session) {
-            }
-
-            @Override
-            public void onSessionEnding(CastSession session) {
-            }
-
-            @Override
-            public void onSessionResuming(CastSession session, String sessionId) {
-            }
-
-            @Override
-            public void onSessionSuspended(CastSession session, int reason) {
-            }
-
-            private void onApplicationConnected(CastSession castSession) {
-                mCastSession = castSession;
-                if (null != mSelectedMedia) {
-
-                    if (mPlaybackState == PlaybackState.PLAYING) {
-                        binding.videoView.pause();
-                        loadRemoteMedia(binding.seekBar.getProgress(), true);
-                        return;
-                    } else {
-                        mPlaybackState = PlaybackState.IDLE;
-                        updatePlaybackLocation(PlaybackLocation.REMOTE);
-                    }
-                }
-                updatePlayButton(mPlaybackState);
-                invalidateOptionsMenu();
-            }
-
-            private void onApplicationDisconnected() {
-                updatePlaybackLocation(PlaybackLocation.LOCAL);
+            if (mPlaybackState == PlaybackState.PLAYING) {
+                binding.videoView.pause();
+                loadRemoteMedia(binding.seekBar.getProgress(), true);
+                return;
+            } else {
                 mPlaybackState = PlaybackState.IDLE;
-                mLocation = PlaybackLocation.LOCAL;
-                updatePlayButton(mPlaybackState);
-                invalidateOptionsMenu();
+                updatePlaybackLocation(PlaybackLocation.REMOTE);
             }
-        };
+        }
+        updatePlayButton(mPlaybackState);
+        invalidateOptionsMenu();
+    }
+
+    private void onApplicationDisconnected() {
+        updatePlaybackLocation(PlaybackLocation.LOCAL);
+        mPlaybackState = PlaybackState.IDLE;
+        mLocation = PlaybackLocation.LOCAL;
+        updatePlayButton(mPlaybackState);
+        invalidateOptionsMenu();
     }
 
     private void updatePlaybackLocation(PlaybackLocation location) {
@@ -288,8 +237,15 @@ public class LocalPlayerActivity extends AppCompatActivity {
                 break;
 
             case PLAYING:
-                mPlaybackState = PlaybackState.PAUSED;
-                binding.videoView.pause();
+                switch (mLocation) {
+                    case LOCAL:
+                        mPlaybackState = PlaybackState.PAUSED;
+                        binding.videoView.pause();
+                        break;
+                    case REMOTE:
+                        // Do nothing?
+                        break;
+                }
                 break;
 
             case IDLE:
@@ -545,12 +501,6 @@ public class LocalPlayerActivity extends AppCompatActivity {
             public void onProgressChanged(SeekBar seekBar, int progress,
                     boolean fromUser) {
                 binding.startText.setText(Utils.formatMillis(progress));
-            }
-        });
-
-        binding.pause.setOnClickListener(v -> {
-            if (mLocation == PlaybackLocation.LOCAL) {
-                togglePlayback(v);
             }
         });
     }
