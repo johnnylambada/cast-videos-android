@@ -52,8 +52,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:onClick="togglePlayback"
-            />
+                android:onClick="togglePlayback" />
 
     </RelativeLayout>
 
@@ -89,7 +88,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentLeft="true"
-                    android:src="@drawable/ic_av_pause_dark"/>
+                    android:src="@drawable/ic_av_pause_dark"
+                    android:onClick="togglePlayback" />
 
             <TextView
                     android:id="@+id/startText"
