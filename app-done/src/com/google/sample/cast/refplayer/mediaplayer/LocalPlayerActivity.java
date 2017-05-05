@@ -116,12 +116,6 @@ public class LocalPlayerActivity extends AppCompatActivity {
         binding.description.setMovementMethod(new ScrollingMovementMethod());
         binding.startText.setText(Utils.formatMillis(0));
         ViewCompat.setTransitionName(binding.coverArtView, getString(R.string.transition_image));
-        binding.playCircle.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                togglePlayback();
-            }
-        });
         CastButtonFactory.setUpMediaRouteButton(getApplicationContext(), binding.mediaRouteButton);
 
         setupControlsCallbacks();
@@ -273,7 +267,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
         restartTrickplayTimer();
     }
 
-    private void togglePlayback() {
+    public void togglePlayback(View __) {
         stopControllersTimer();
         switch (mPlaybackState) {
             case PAUSED:
@@ -442,23 +436,11 @@ public class LocalPlayerActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onStop() {
-        Log.d(TAG, "onStop() was called");
-        super.onStop();
-    }
-
-    @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy() is called");
         stopControllersTimer();
         stopTrickplayTimer();
         super.onDestroy();
-    }
-
-    @Override
-    protected void onStart() {
-        Log.d(TAG, "onStart was called");
-        super.onStart();
     }
 
     @Override
@@ -478,12 +460,9 @@ public class LocalPlayerActivity extends AppCompatActivity {
 
         @Override
         public void run() {
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    updateControllersVisibility(false);
-                    mControllersVisible = false;
-                }
+            mHandler.post(() -> {
+                updateControllersVisibility(false);
+                mControllersVisible = false;
             });
 
         }
@@ -493,75 +472,55 @@ public class LocalPlayerActivity extends AppCompatActivity {
 
         @Override
         public void run() {
-            mHandler.post(new Runnable() {
-
-                @Override
-                public void run() {
-                    if (mLocation == PlaybackLocation.LOCAL) {
-                        int currentPos = binding.videoView.getCurrentPosition();
-                        updateSeekbar(currentPos, mDuration);
-                    }
+            mHandler.post(() -> {
+                if (mLocation == PlaybackLocation.LOCAL) {
+                    int currentPos = binding.videoView.getCurrentPosition();
+                    updateSeekbar(currentPos, mDuration);
                 }
             });
         }
     }
 
     private void setupControlsCallbacks() {
-        binding.videoView.setOnErrorListener(new OnErrorListener() {
-
-            @Override
-            public boolean onError(MediaPlayer mp, int what, int extra) {
-                Log.e(TAG, "OnErrorListener.onError(): VideoView encountered an "
-                        + "error, what: " + what + ", extra: " + extra);
-                String msg;
-                if (extra == MediaPlayer.MEDIA_ERROR_TIMED_OUT) {
-                    msg = getString(R.string.video_error_media_load_timeout);
-                } else if (what == MediaPlayer.MEDIA_ERROR_SERVER_DIED) {
-                    msg = getString(R.string.video_error_server_unaccessible);
-                } else {
-                    msg = getString(R.string.video_error_unknown_error);
-                }
-                Utils.showErrorDialog(LocalPlayerActivity.this, msg);
-                binding.videoView.stopPlayback();
-                mPlaybackState = PlaybackState.IDLE;
-                updatePlayButton(mPlaybackState);
-                return true;
+        binding.videoView.setOnErrorListener((__, what, extra) -> {
+            Log.e(TAG, "OnErrorListener.onError(): VideoView encountered an "
+                    + "error, what: " + what + ", extra: " + extra);
+            String msg;
+            if (extra == MediaPlayer.MEDIA_ERROR_TIMED_OUT) {
+                msg = getString(R.string.video_error_media_load_timeout);
+            } else if (what == MediaPlayer.MEDIA_ERROR_SERVER_DIED) {
+                msg = getString(R.string.video_error_server_unaccessible);
+            } else {
+                msg = getString(R.string.video_error_unknown_error);
             }
+            Utils.showErrorDialog(LocalPlayerActivity.this, msg);
+            binding.videoView.stopPlayback();
+            mPlaybackState = PlaybackState.IDLE;
+            updatePlayButton(mPlaybackState);
+            return true;
         });
 
-        binding.videoView.setOnPreparedListener(new OnPreparedListener() {
-
-            @Override
-            public void onPrepared(MediaPlayer mp) {
-                Log.d(TAG, "onPrepared is reached");
-                mDuration = mp.getDuration();
-                binding.endText.setText(Utils.formatMillis(mDuration));
-                binding.seekBar.setMax(mDuration);
-                restartTrickplayTimer();
-            }
+        binding.videoView.setOnPreparedListener(mp -> {
+            Log.d(TAG, "onPrepared is reached");
+            mDuration = mp.getDuration();
+            binding.endText.setText(Utils.formatMillis(mDuration));
+            binding.seekBar.setMax(mDuration);
+            restartTrickplayTimer();
         });
 
-        binding.videoView.setOnCompletionListener(new OnCompletionListener() {
-
-            @Override
-            public void onCompletion(MediaPlayer mp) {
-                stopTrickplayTimer();
-                Log.d(TAG, "setOnCompletionListener()");
-                mPlaybackState = PlaybackState.IDLE;
-                updatePlayButton(mPlaybackState);
-            }
+        binding.videoView.setOnCompletionListener(__ -> {
+            stopTrickplayTimer();
+            Log.d(TAG, "setOnCompletionListener()");
+            mPlaybackState = PlaybackState.IDLE;
+            updatePlayButton(mPlaybackState);
         });
 
-        binding.videoView.setOnTouchListener(new OnTouchListener() {
-
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (!mControllersVisible) {
-                    updateControllersVisibility(true);
-                }
-                startControllersTimer();
-                return false;
+        binding.videoView.setOnTouchListener((v, event) -> {
+            if (!mControllersVisible) {
+                updateControllersVisibility(true);
             }
+            startControllersTimer();
+            return false;
         });
 
         binding.seekBar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
@@ -590,13 +549,9 @@ public class LocalPlayerActivity extends AppCompatActivity {
             }
         });
 
-        binding.pause.setOnClickListener(new OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-                if (mLocation == PlaybackLocation.LOCAL) {
-                    togglePlayback();
-                }
+        binding.pause.setOnClickListener(v -> {
+            if (mLocation == PlaybackLocation.LOCAL) {
+                togglePlayback(v);
             }
         });
     }
