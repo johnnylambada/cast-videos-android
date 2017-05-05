@@ -55,6 +55,7 @@ import com.google.sample.cast.refplayer.expandedcontrols.ExpandedControlsActivit
 import com.google.sample.cast.refplayer.settings.CastPreference;
 import com.google.sample.cast.refplayer.utils.MediaItem;
 import com.google.sample.cast.refplayer.utils.OnSeekBarChangeListenerBuilder;
+import com.google.sample.cast.refplayer.utils.RemoteMediaClientListenerBuilder;
 import com.google.sample.cast.refplayer.utils.SessionManagerListenerBuilder;
 import com.google.sample.cast.refplayer.utils.TriConsumer;
 import com.google.sample.cast.refplayer.utils.Utils;
@@ -80,6 +81,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
     private CastContext mCastContext;
     private CastSession mCastSession;
     private SessionManagerListener<CastSession> mSessionManagerListener;
+    private RemoteMediaClient.Listener mRemoteMediaClientListner = null;
     private MenuItem mediaRouteMenuItem;
 
     private PlayerActivityBinding binding;
@@ -109,7 +111,80 @@ public class LocalPlayerActivity extends AppCompatActivity {
         ViewCompat.setTransitionName(binding.coverArtView, getString(R.string.transition_image));
         CastButtonFactory.setUpMediaRouteButton(getApplicationContext(), binding.mediaRouteButton);
 
-        setupControlsCallbacks();
+        binding.videoView.setOnErrorListener((__, what, extra) -> {
+            Log.e(TAG, "OnErrorListener.onError(): VideoView encountered an "
+                    + "error, what: " + what + ", extra: " + extra);
+            String msg;
+            if (extra == MediaPlayer.MEDIA_ERROR_TIMED_OUT) {
+                msg = getString(R.string.video_error_media_load_timeout);
+            } else if (what == MediaPlayer.MEDIA_ERROR_SERVER_DIED) {
+                msg = getString(R.string.video_error_server_unaccessible);
+            } else {
+                msg = getString(R.string.video_error_unknown_error);
+            }
+            Utils.showErrorDialog(LocalPlayerActivity.this, msg);
+            binding.videoView.stopPlayback();
+            mPlaybackState = PlaybackState.IDLE;
+            updatePlayButton(mPlaybackState);
+            return true;
+        });
+
+        binding.videoView.setOnPreparedListener(mp -> {
+            Log.d(TAG, "onPrepared is reached");
+            mDuration = mp.getDuration();
+            binding.endText.setText(Utils.formatMillis(mDuration));
+            binding.seekBar.setMax(mDuration);
+            restartTrickplayTimer();
+        });
+
+        binding.videoView.setOnCompletionListener(__ -> {
+            stopTrickplayTimer();
+            Log.d(TAG, "setOnCompletionListener()");
+            mPlaybackState = PlaybackState.IDLE;
+            updatePlayButton(mPlaybackState);
+        });
+
+        binding.videoView.setOnTouchListener((v, event) -> {
+            if (!mControllersVisible) {
+                updateControllersVisibility(true);
+            }
+            startControllersTimer();
+            return false;
+        });
+        binding.seekBar.setOnSeekBarChangeListener(new OnSeekBarChangeListenerBuilder()
+                .withStartTrackingTouch(seekBar -> {
+                    stopTrickplayTimer();
+                    binding.videoView.pause();
+                    stopControllersTimer();
+                })
+                .withStopTrackingTouch(seekBar -> {
+                    if (mPlaybackState == PlaybackState.PLAYING) {
+                        final int position = seekBar.getProgress();
+                        startControllersTimer();
+                        switch (mLocation) {
+                            case LOCAL:
+                                binding.videoView.seekTo(position);
+                                binding.videoView.start();
+                                break;
+                            case REMOTE:
+                                mPlaybackState = PlaybackState.BUFFERING;
+                                updatePlayButton(mPlaybackState);
+                                mCastSession.getRemoteMediaClient().seek(position);
+                                break;
+                            default:
+                                break;
+                        }
+                        restartTrickplayTimer();
+                    } else if (mPlaybackState != PlaybackState.IDLE) {
+                        binding.videoView.seekTo(seekBar.getProgress());
+                    }
+                    startControllersTimer();
+                })
+                .withProgressChanged((__, progress, ___) -> {
+                    binding.startText.setText(Utils.formatMillis(progress));
+                })
+                .build()
+        );
         mSessionManagerListener = new SessionManagerListenerBuilder<CastSession>()
                 .withSessionStarted((s,__)->onApplicationConnected(s))
                 .withSessionStartFailed((__,___)->onApplicationDisconnected())
@@ -261,6 +336,7 @@ public class LocalPlayerActivity extends AppCompatActivity {
         updatePlayButton(mPlaybackState);
     }
 
+
     private void loadRemoteMedia(int position, boolean autoPlay) {
         if (mCastSession == null) {
             return;
@@ -269,34 +345,16 @@ public class LocalPlayerActivity extends AppCompatActivity {
         if (remoteMediaClient == null) {
             return;
         }
-        remoteMediaClient.addListener(new RemoteMediaClient.Listener() {
-            @Override
-            public void onStatusUpdated() {
-                Intent intent = new Intent(LocalPlayerActivity.this, ExpandedControlsActivity.class);
-                startActivity(intent);
-                remoteMediaClient.removeListener(this);
-            }
-
-            @Override
-            public void onMetadataUpdated() {
-            }
-
-            @Override
-            public void onQueueStatusUpdated() {
-            }
-
-            @Override
-            public void onPreloadStatusUpdated() {
-            }
-
-            @Override
-            public void onSendingRemoteMediaRequest() {
-            }
-
-            @Override
-            public void onAdBreakStatusUpdated() {
-            }
-        });
+        if (mRemoteMediaClientListner == null){
+            mRemoteMediaClientListner = new RemoteMediaClientListenerBuilder()
+                    .withStatusUpdated(() -> {
+                        Intent intent = new Intent(LocalPlayerActivity.this, ExpandedControlsActivity.class);
+                        startActivity(intent);
+                        remoteMediaClient.removeListener(mRemoteMediaClientListner);
+                    })
+                    .build();
+        }
+        remoteMediaClient.addListener(mRemoteMediaClientListner);
         remoteMediaClient.load(buildMediaInfo(), autoPlay, position);
     }
 
@@ -422,83 +480,6 @@ public class LocalPlayerActivity extends AppCompatActivity {
                 }
             });
         }
-    }
-
-    private void setupControlsCallbacks() {
-        binding.videoView.setOnErrorListener((__, what, extra) -> {
-            Log.e(TAG, "OnErrorListener.onError(): VideoView encountered an "
-                    + "error, what: " + what + ", extra: " + extra);
-            String msg;
-            if (extra == MediaPlayer.MEDIA_ERROR_TIMED_OUT) {
-                msg = getString(R.string.video_error_media_load_timeout);
-            } else if (what == MediaPlayer.MEDIA_ERROR_SERVER_DIED) {
-                msg = getString(R.string.video_error_server_unaccessible);
-            } else {
-                msg = getString(R.string.video_error_unknown_error);
-            }
-            Utils.showErrorDialog(LocalPlayerActivity.this, msg);
-            binding.videoView.stopPlayback();
-            mPlaybackState = PlaybackState.IDLE;
-            updatePlayButton(mPlaybackState);
-            return true;
-        });
-
-        binding.videoView.setOnPreparedListener(mp -> {
-            Log.d(TAG, "onPrepared is reached");
-            mDuration = mp.getDuration();
-            binding.endText.setText(Utils.formatMillis(mDuration));
-            binding.seekBar.setMax(mDuration);
-            restartTrickplayTimer();
-        });
-
-        binding.videoView.setOnCompletionListener(__ -> {
-            stopTrickplayTimer();
-            Log.d(TAG, "setOnCompletionListener()");
-            mPlaybackState = PlaybackState.IDLE;
-            updatePlayButton(mPlaybackState);
-        });
-
-        binding.videoView.setOnTouchListener((v, event) -> {
-            if (!mControllersVisible) {
-                updateControllersVisibility(true);
-            }
-            startControllersTimer();
-            return false;
-        });
-        binding.seekBar.setOnSeekBarChangeListener(new OnSeekBarChangeListenerBuilder()
-                .withStartTrackingTouch(seekBar -> {
-                    stopTrickplayTimer();
-                    binding.videoView.pause();
-                    stopControllersTimer();
-                })
-                .withStopTrackingTouch(seekBar -> {
-                    if (mPlaybackState == PlaybackState.PLAYING) {
-                        final int position = seekBar.getProgress();
-                        startControllersTimer();
-                        switch (mLocation) {
-                            case LOCAL:
-                                binding.videoView.seekTo(position);
-                                binding.videoView.start();
-                                break;
-                            case REMOTE:
-                                mPlaybackState = PlaybackState.BUFFERING;
-                                updatePlayButton(mPlaybackState);
-                                mCastSession.getRemoteMediaClient().seek(position);
-                                break;
-                            default:
-                                break;
-                        }
-                        restartTrickplayTimer();
-                    } else if (mPlaybackState != PlaybackState.IDLE) {
-                        binding.videoView.seekTo(seekBar.getProgress());
-                    }
-                    startControllersTimer();
-                })
-                .withProgressChanged((__, progress, ___) -> {
-                    binding.startText.setText(Utils.formatMillis(progress));
-                })
-                .build()
-        );
     }
 
     private void updateSeekbar(int position, int duration) {
