@@ -37,8 +37,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.RelativeLayout;
-import android.widget.SeekBar;
-import android.widget.SeekBar.OnSeekBarChangeListener;
 
 import com.bumptech.glide.Glide;
 import com.google.android.gms.cast.MediaInfo;
@@ -57,7 +55,6 @@ import com.google.sample.cast.refplayer.utils.MediaItem;
 import com.google.sample.cast.refplayer.utils.OnSeekBarChangeListenerBuilder;
 import com.google.sample.cast.refplayer.utils.RemoteMediaClientListenerBuilder;
 import com.google.sample.cast.refplayer.utils.SessionManagerListenerBuilder;
-import com.google.sample.cast.refplayer.utils.TriConsumer;
 import com.google.sample.cast.refplayer.utils.Utils;
 
 import java.util.Timer;
@@ -80,7 +77,13 @@ public class LocalPlayerActivity extends AppCompatActivity {
     private PlaybackLocation mLocation;
     private CastContext mCastContext;
     private CastSession mCastSession;
-    private SessionManagerListener<CastSession> mSessionManagerListener;
+    private final SessionManagerListener<CastSession> mSessionManagerListener = new SessionManagerListenerBuilder<CastSession>()
+            .withSessionStarted((s,__)->onApplicationConnected(s))
+            .withSessionStartFailed((__,___)->onApplicationDisconnected())
+            .withSessionEnded((__,___) -> onApplicationDisconnected())
+            .withSessionResumed((s,__)->onApplicationConnected(s))
+            .withSessionResumeFailed((__,___)->onApplicationDisconnected())
+            .build();
     private RemoteMediaClient.Listener mRemoteMediaClientListner = null;
     private MenuItem mediaRouteMenuItem;
 
@@ -107,10 +110,50 @@ public class LocalPlayerActivity extends AppCompatActivity {
         binding = DataBindingUtil.setContentView(this,R.layout.player_activity);
 
         binding.description.setMovementMethod(new ScrollingMovementMethod());
-        binding.startText.setText(Utils.formatMillis(0));
         ViewCompat.setTransitionName(binding.coverArtView, getString(R.string.transition_image));
         CastButtonFactory.setUpMediaRouteButton(getApplicationContext(), binding.mediaRouteButton);
 
+        setupVideoView();
+        setupSeekBar();
+
+        mCastContext = CastContext.getSharedInstance(this);
+        mCastSession = mCastContext.getSessionManager().getCurrentCastSession();
+        // see what we need to play and where
+        Bundle bundle = getIntent().getExtras();
+        if (bundle != null) {
+            mSelectedMedia = MediaItem.fromBundle(getIntent().getBundleExtra("media"));
+            setupActionBar();
+            boolean shouldStartPlayback = bundle.getBoolean("shouldStart");
+            int startPosition = bundle.getInt("startPosition", 0);
+            binding.videoView.setVideoURI(Uri.parse(mSelectedMedia.getUrl()));
+            Log.d(TAG, "Setting url of the VideoView to: " + mSelectedMedia.getUrl());
+            if (shouldStartPlayback) {
+                // this will be the case only if we are coming from the
+                // CastControllerActivity by disconnecting from a device
+                mPlaybackState = PlaybackState.PLAYING;
+                updatePlaybackLocation(PlaybackLocation.LOCAL);
+                updatePlayButton(mPlaybackState);
+                if (startPosition > 0) {
+                    binding.videoView.seekTo(startPosition);
+                }
+                binding.videoView.start();
+                startControllersTimer();
+            } else {
+                // we should load the video but pause it
+                // and show the album art.
+                if (mCastSession != null && mCastSession.isConnected()) {
+                    updatePlaybackLocation(PlaybackLocation.REMOTE);
+                } else {
+                    updatePlaybackLocation(PlaybackLocation.LOCAL);
+                }
+                mPlaybackState = PlaybackState.IDLE;
+                updatePlayButton(mPlaybackState);
+            }
+        }
+        updateMetadata(true);
+    }
+
+    private void setupVideoView(){
         binding.videoView.setOnErrorListener((__, what, extra) -> {
             Log.e(TAG, "OnErrorListener.onError(): VideoView encountered an "
                     + "error, what: " + what + ", extra: " + extra);
@@ -151,6 +194,9 @@ public class LocalPlayerActivity extends AppCompatActivity {
             startControllersTimer();
             return false;
         });
+    }
+
+    private void setupSeekBar(){
         binding.seekBar.setOnSeekBarChangeListener(new OnSeekBarChangeListenerBuilder()
                 .withStartTrackingTouch(seekBar -> {
                     stopTrickplayTimer();
@@ -185,50 +231,6 @@ public class LocalPlayerActivity extends AppCompatActivity {
                 })
                 .build()
         );
-        mSessionManagerListener = new SessionManagerListenerBuilder<CastSession>()
-                .withSessionStarted((s,__)->onApplicationConnected(s))
-                .withSessionStartFailed((__,___)->onApplicationDisconnected())
-                .withSessionEnded((__,___) -> onApplicationDisconnected())
-                .withSessionResumed((s,__)->onApplicationConnected(s))
-                .withSessionResumeFailed((__,___)->onApplicationDisconnected())
-                .build();
-        mCastContext = CastContext.getSharedInstance(this);
-        mCastSession = mCastContext.getSessionManager().getCurrentCastSession();
-        // see what we need to play and where
-        Bundle bundle = getIntent().getExtras();
-        if (bundle != null) {
-            mSelectedMedia = MediaItem.fromBundle(getIntent().getBundleExtra("media"));
-            setupActionBar();
-            boolean shouldStartPlayback = bundle.getBoolean("shouldStart");
-            int startPosition = bundle.getInt("startPosition", 0);
-            binding.videoView.setVideoURI(Uri.parse(mSelectedMedia.getUrl()));
-            Log.d(TAG, "Setting url of the VideoView to: " + mSelectedMedia.getUrl());
-            if (shouldStartPlayback) {
-                // this will be the case only if we are coming from the
-                // CastControllerActivity by disconnecting from a device
-                mPlaybackState = PlaybackState.PLAYING;
-                updatePlaybackLocation(PlaybackLocation.LOCAL);
-                updatePlayButton(mPlaybackState);
-                if (startPosition > 0) {
-                    binding.videoView.seekTo(startPosition);
-                }
-                binding.videoView.start();
-                startControllersTimer();
-            } else {
-                // we should load the video but pause it
-                // and show the album art.
-                if (mCastSession != null && mCastSession.isConnected()) {
-                    updatePlaybackLocation(PlaybackLocation.REMOTE);
-                } else {
-                    updatePlaybackLocation(PlaybackLocation.LOCAL);
-                }
-                mPlaybackState = PlaybackState.IDLE;
-                updatePlayButton(mPlaybackState);
-            }
-        }
-        if (binding.title != null) {
-            updateMetadata(true);
-        }
     }
 
     private void onApplicationConnected(CastSession castSession) {
